@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>La Cadena</title>
+<meta name="description" content="Tu racha de trades limpios. No rompás la cadena.">
+<meta name="theme-color" content="#0c1422">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Concepto: una app de celular con la cadena de bronce como protagonista. Arriba la racha enorme, abajo navegación por pestañas y un botón grande para anotar. */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --surface-2:#f6f8fb; --ink:#0f1b2d; --muted:#5b6b82; --line:#d9e0ea;
+  --brass:#c8901f; --brass-hi:#f1c45a; --brass-lo:#8a5e0e; --on-brass:#241a05;
+  --ok:#128a5c; --ok-soft:#dcf3e9; --bad:#d4483f; --bad-soft:#fbe4e2; --ghost:#c3cdda;
+  --shadow:0 10px 30px rgba(15,27,45,.12);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:Inter,"Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --tab-h:64px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0c1422; --surface:#142033; --surface-2:#18263c; --ink:#e9eef6; --muted:#8d9bb2; --line:#24324a;
+  --brass:#e0a93a; --brass-hi:#ffd77a; --brass-lo:#9a6a14; --on-brass:#241a05;
+  --ok:#39c98f; --ok-soft:#163a2f; --bad:#f0736a; --bad-soft:#3b2026; --ghost:#2e3d57;
+  --shadow:0 12px 34px rgba(0,0,0,.45);
+  color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+button{font:inherit;color:inherit}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+.app{min-height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 24px)}
+.view{max-width:560px;margin:0 auto;padding-block:18px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand svg{width:26px;height:26px}
+.date{font-size:13px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+h2{font-family:var(--f-display);font-size:18px;font-weight:800;margin:0;text-wrap:balance}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* Héroe */
+.hero{position:relative;overflow:hidden;padding:22px 18px 16px}
+.hero::after{content:"";position:absolute;inset:auto -40px -60px auto;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--brass) 22%,transparent),transparent 70%);pointer-events:none}
+.streak-wrap{display:flex;align-items:flex-end;gap:14px}
+.streak{font-family:var(--f-display);font-weight:800;font-size:104px;line-height:.82;letter-spacing:-.05em;background:linear-gradient(180deg,var(--brass-hi),var(--brass) 55%,var(--brass-lo));-webkit-background-clip:text;background-clip:text;color:transparent}
+.streak.zero{background:none;color:var(--ghost)}
+.streak-lbl{padding-bottom:10px;font-weight:600;line-height:1.25}
+.streak-lbl small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.level-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:linear-gradient(180deg,var(--brass-hi),var(--brass));color:var(--on-brass);font-weight:700;font-size:13px}
+.badge.novato{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.next{font-size:13px;color:var(--muted)}
+.progress{height:8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.progress i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--brass-lo),var(--brass-hi));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.chain-box{margin:2px -4px 0;overflow:hidden}
+.chain-box svg{display:block;width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--f-mono);font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pos{color:var(--ok)} .neg{color:var(--bad)}
+
+/* Hoy */
+.today{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter{display:flex;flex-direction:column;gap:6px}
+.meter .top{display:flex;justify-content:space-between;font-size:13px}
+.pips{display:flex;gap:6px}
+.pip{flex:1;height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
+.pip.on{background:var(--brass);border-color:var(--brass)}
+.pip.over{background:var(--bad);border-color:var(--bad)}
+.lossbar{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.lossbar i{display:block;height:100%;width:0;background:var(--bad);transition:width .4s}
+.stop{padding:12px 14px;border-radius:14px;background:var(--bad-soft);color:var(--bad);font-weight:600;font-size:14px}
+
+/* FAB */
+.fab{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 14px);height:58px;padding:0 26px 0 20px;border-radius:999px;border:0;display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--on-brass);background:linear-gradient(180deg,var(--brass-hi),var(--brass));box-shadow:var(--shadow),inset 0 -3px 0 var(--brass-lo);cursor:pointer}
+.fab svg{width:24px;height:24px}
+.fab:active{transform:translateX(-50%) scale(.97)}
+
+/* Tabs */
+.tabs{position:fixed;z-index:19;left:0;right:0;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;justify-content:space-around}
+.tab{flex:1;max-width:160px;height:var(--tab-h);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer}
+.tab svg{width:22px;height:22px}
+.tab[aria-selected="true"]{color:var(--brass)}
+
+/* Historial */
+.list{display:flex;flex-direction:column}
+.tr{display:grid;grid-template-columns:28px 1fr auto;gap:2px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.tr:first-child{border-top:0}
+.tr .ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;font-family:var(--f-mono)}
+.tr .ic.ok{background:linear-gradient(180deg,var(--brass-hi),var(--brass));color:var(--on-brass)}
+.tr .ic.bad{background:var(--bad-soft);color:var(--bad)}
+.tr .sym{font-weight:600}
+.tr .meta{font-size:12px;color:var(--muted)}
+.tr .pnl{font-family:var(--f-mono);font-weight:700;text-align:right}
+.tr .why{grid-column:2/4;font-size:13px;color:var(--bad)}
+.tr .note{grid-column:2/4;font-size:13px;color:var(--muted)}
+.tr .del{grid-column:3;justify-self:end;background:none;border:0;padding:4px 0;font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer}
+.tr .del.arm{color:var(--bad);font-weight:700}
+.empty{padding:18px 4px;text-align:center;color:var(--muted)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+
+/* Ajustes */
+.field{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+.input{font:inherit;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:13px 16px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px}
+.btn svg{width:20px;height:20px;flex:none}
+.btn.primary{background:linear-gradient(180deg,var(--brass-hi),var(--brass));color:var(--on-brass);border-color:var(--brass);justify-content:center;font-weight:700}
+.btn.danger{color:var(--bad)}
+.btn.danger.arm{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btns{display:flex;flex-direction:column;gap:8px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* Hoja para anotar */
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(5,10,20,.5);opacity:0;transition:opacity .25s}
+.scrim.show{opacity:1}
+.sheet{position:fixed;z-index:31;left:0;right:0;bottom:0;max-height:92%;overflow:auto;background:var(--surface);border-radius:24px 24px 0 0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow)}
+.sheet.show{transform:none}
+.sheet-in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.grab{width:44px;height:5px;border-radius:9px;background:var(--line);margin:4px auto 2px}
+.seg{display:flex;padding:4px;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px}
+.seg button{flex:1;border:0;background:none;padding:10px;border-radius:10px;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button.long[aria-pressed="true"]{color:var(--ok)}
+.seg button.short[aria-pressed="true"]{color:var(--bad)}
+.pnl-row{display:grid;grid-template-columns:auto 1fr;gap:8px}
+.sign{display:flex;flex-direction:column;gap:4px}
+.sign button{width:52px;flex:1;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;font-weight:800;font-size:18px;cursor:pointer;color:var(--muted)}
+.sign button[aria-pressed="true"].g{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.sign button[aria-pressed="true"].p{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.big-input{font-family:var(--f-mono);font-size:34px;font-weight:700;padding:10px 14px}
+.checks{display:flex;flex-direction:column;gap:8px}
+.check{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2);cursor:pointer;text-align:left;width:100%}
+.check .box{width:26px;height:26px;border-radius:8px;border:2px solid var(--ghost);display:grid;place-items:center;flex:none;transition:all .15s}
+.check .box svg{width:16px;height:16px;opacity:0}
+.check[aria-checked="true"]{border-color:var(--brass);background:color-mix(in srgb,var(--brass) 12%,var(--surface))}
+.check[aria-checked="true"] .box{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.check[aria-checked="true"] .box svg{opacity:1}
+.check span{font-weight:500}
+.verdict{border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;display:flex;gap:10px;align-items:center}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.verdict.bad{background:var(--bad-soft);color:var(--bad)}
+
+/* Celebración / ruptura */
+.overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:24px;background:rgba(5,10,20,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.pop{background:var(--surface);border-radius:26px;padding:28px 22px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;animation:popin .45s cubic-bezier(.2,1.4,.4,1)}
+.pop .medal{font-size:64px;line-height:1}
+.pop h3{font-family:var(--f-display);font-weight:800;font-size:26px;margin:0;text-wrap:balance}
+.pop p{margin:0;color:var(--muted)}
+.pop .btn{margin-top:8px;width:100%}
+@keyframes popin{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+.toast{position:fixed;z-index:50;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 14px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:600;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
+.link-new{animation:drop .6s cubic-bezier(.2,1.5,.4,1)}
+@keyframes drop{from{transform:translateY(-30px) scale(1.5);opacity:0}to{transform:none;opacity:1}}
+canvas#fx{position:fixed;inset:0;z-index:45;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CADENA -->
+  <main class="view" id="v-cadena">
+    <div class="topbar">
+      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--brass-hi)"/><stop offset="1" stop-color="var(--brass-lo)"/></linearGradient></defs><ellipse cx="11" cy="16" rx="8" ry="5.5" fill="none" stroke="url(#bg1)" stroke-width="3.2"/><ellipse cx="21" cy="16" rx="8" ry="5.5" fill="none" stroke="url(#bg1)" stroke-width="3.2"/></svg>La Cadena</div>
+      <div class="date" id="today-lbl"></div>
+    </div>
+
+    <section class="card hero" aria-label="Tu racha">
+      <div class="streak-wrap">
+        <div class="streak mono" id="streak">0</div>
+        <div class="streak-lbl">trades limpios<br>seguidos<small id="streak-sub">Empezá la cadena</small></div>
+      </div>
+      <div class="chain-box" id="chain" aria-hidden="true"></div>
+      <div class="level-row">
+        <span class="badge novato" id="badge">Novato</span>
+        <span class="next" id="next">5 para Aprendiz 🥉</span>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+      <div class="stats">
+        <div class="stat"><b id="best">0</b><span>Récord</span></div>
+        <div class="stat"><b id="points">0</b><span>Puntos</span></div>
+        <div class="stat"><b id="bal">$200</b><span>Cuenta</span></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-hoy">
+      <div class="eyebrow" id="h-hoy">Hoy</div>
+      <div class="today">
+        <div class="meter">
+          <div class="top"><span>Trades</span><b class="mono" id="t-count">0 de 2</b></div>
+          <div class="pips" id="pips"></div>
+        </div>
+        <div class="meter">
+          <div class="top"><span>Pérdida</span><b class="mono" id="t-loss">$0 de $20</b></div>
+          <div class="lossbar"><i id="lossbar"></i></div>
+        </div>
+      </div>
+      <div class="stop" id="stop" hidden></div>
+    </section>
+  </main>
+
+  <!-- CUENTA -->
+  <main class="view" id="v-cuenta" hidden>
+    <div class="topbar"><div class="brand">La cuenta</div><div class="date mono" id="bal2"></div></div>
+    <section class="card">
+      <div class="eyebrow">Saldo después de cada trade</div>
+      <svg class="chart" id="chart" viewBox="0 0 520 180" role="img" aria-label="Saldo de la cuenta"></svg>
+      <div class="grid2">
+        <div class="stat"><b id="winrate">—</b><span>Ganados</span></div>
+        <div class="stat"><b id="cleanrate">—</b><span>Limpios</span></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Historial</h2>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+
+  <!-- AJUSTES -->
+  <main class="view" id="v-ajustes" hidden>
+    <div class="topbar"><div class="brand">Ajustes</div></div>
+    <section class="card" id="install-card" hidden>
+      <h2>Instalala en el celular</h2>
+      <p class="hint">Queda con su ícono en la pantalla de inicio y abre como app, aunque no haya internet.</p>
+      <button class="btn primary" id="install">Instalar La Cadena</button>
+    </section>
+    <section class="card">
+      <h2>Tus reglas</h2>
+      <div class="grid2">
+        <label class="field" for="s-cap">Cuenta inicial ($)<input class="input mono" id="s-cap" type="number" inputmode="decimal" min="1"></label>
+        <label class="field" for="s-risk">Riesgo por trade ($)<input class="input mono" id="s-risk" type="number" inputmode="decimal" min="1"></label>
+        <label class="field" for="s-max">Trades por día<input class="input mono" id="s-max" type="number" inputmode="numeric" min="1"></label>
+        <label class="field" for="s-loss">Pérdida máx. del día ($)<input class="input mono" id="s-loss" type="number" inputmode="decimal" min="1"></label>
+      </div>
+      <p class="hint">Los cambios cuentan para toda la cadena. Cambialos solo antes de empezar o al cerrar un mes.</p>
+    </section>
+    <section class="card">
+      <h2>Tus datos</h2>
+      <p class="hint">Todo se guarda en este celular. Hacé un respaldo cada semana.</p>
+      <div class="btns">
+        <button class="btn" id="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>Mandarle los trades a Claude</button>
+        <button class="btn" id="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Descargar respaldo</button>
+        <button class="btn" id="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Cargar un respaldo</button>
+        <input type="file" id="file" accept="application/json,.json" hidden>
+        <button class="btn danger" id="wipe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>Borrar todo</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Cómo se juega</h2>
+      <ul class="rules">
+        <li>Un trade es <b>limpio</b> si marcás las 4 casillas. Ganar o perder no importa.</li>
+        <li>Pasarte de los trades del día o seguir después de la pérdida máxima rompe la cadena solo.</li>
+        <li>Cada trade limpio vale 10 puntos. Cada 5 seguidos, 25 extra.</li>
+        <li>Niveles: 5 Aprendiz 🥉 · 10 Trader 🥈 · 20 Disciplinado 🥇 · 40 Maestro 🏆.</li>
+        <li>Llegar a Maestro es la señal para meterle más plata a la cuenta.</li>
+      </ul>
+    </section>
+    <p class="hint" style="text-align:center">La Cadena · v1</p>
+  </main>
+</div>
+
+<button class="fab" id="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Anotar trade</button>
+
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button class="tab" role="tab" aria-selected="true" data-v="cadena"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="8" cy="12" rx="6" ry="4"/><ellipse cx="16" cy="12" rx="6" ry="4"/></svg>Cadena</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Cuenta</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Ajustes</button>
+</nav>
+
+<!-- Hoja para anotar -->
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" hidden>
+  <form class="sheet-in" id="form" novalidate>
+    <div class="grab"></div>
+    <h2 id="sheet-h">Anotar trade</h2>
+    <div class="grid2">
+      <label class="field" for="f-sym">Acción<input class="input mono" id="f-sym" type="text" autocomplete="off" autocapitalize="characters" maxlength="10" placeholder="NVDA"></label>
+      <div class="field">Lado
+        <div class="seg" role="group" aria-label="Lado">
+          <button type="button" class="long" id="f-long" aria-pressed="true">Long</button>
+          <button type="button" class="short" id="f-short" aria-pressed="false">Short</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">Resultado en dólares
+      <div class="pnl-row">
+        <div class="sign"><button type="button" class="g" id="f-gain" aria-pressed="true" aria-label="Gané">+</button><button type="button" class="p" id="f-lossb" aria-pressed="false" aria-label="Perdí">−</button></div>
+        <input class="input big-input" id="f-pnl" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0" aria-label="Monto en dólares">
+      </div>
+    </div>
+    <div class="checks" id="checks">
+      <button type="button" class="check" role="checkbox" aria-checked="false" data-k="plan"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span>Tenía el plan antes de entrar</span></button>
+      <button type="button" class="check" role="checkbox" aria-checked="false" data-k="sl"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span>Puse el SL en el broker</span></button>
+      <button type="button" class="check" role="checkbox" aria-checked="false" data-k="tp"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span>Puse el TP en el broker</span></button>
+      <button type="button" class="check" role="checkbox" aria-checked="false" data-k="noMove"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span>No moví el SL ni promedié</span></button>
+    </div>
+    <label class="field" for="f-note">Nota (opcional)<input class="input" id="f-note" type="text" maxlength="140" placeholder="Qué aprendí"></label>
+    <div class="verdict" id="verdict"></div>
+    <div class="grid2">
+      <button type="button" class="btn" id="cancel" style="justify-content:center">Cancelar</button>
+      <button type="submit" class="btn primary" id="save">Guardar</button>
+    </div>
+  </form>
+</section>
+
+<div class="overlay" id="overlay" hidden><div class="pop" role="alertdialog" aria-modal="true" aria-labelledby="pop-h"><div class="medal" id="pop-medal"></div><h3 id="pop-h"></h3><p id="pop-p"></p><button class="btn primary" id="pop-ok">Dale</button></div></div>
+<div class="toast" id="toast" hidden></div>
+<canvas id="fx" hidden></canvas>
+
+<script>
+"use strict";
+const KEY = "la-cadena-v1";
+const DEFAULTS = {cap:200, risk:10, maxTrades:2, maxLoss:20};
+const LEVELS = [
+  {n:0,name:"Novato",m:""},{n:5,name:"Aprendiz",m:"🥉"},{n:10,name:"Trader",m:"🥈"},
+  {n:20,name:"Disciplinado",m:"🥇"},{n:40,name:"Maestro",m:"🏆"}
+];
+const CHECKS = ["plan","sl","tp","noMove"];
+const $ = id => document.getElementById(id);
+
+/* ---------- Datos ---------- */
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Array.isArray(s.trades)) return {trades:s.trades, settings:{...DEFAULTS, ...(s.settings||{})}}; }catch(e){}
+  return {trades:[], settings:{...DEFAULTS}};
+}
+let state = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); return true; }catch(e){ toast("No se pudo guardar en el celular. Revisá el espacio."); return false; } }
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+const pad = n => String(n).padStart(2,"0");
+const dayKey = (d=new Date()) => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const fmt = v => { const a = Math.abs(v); return "$" + (a % 1 ? a.toFixed(2) : a.toFixed(0)); };
+const money = v => (v < 0 ? "−" : "") + fmt(v);
+const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(v);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const levelFor = s => LEVELS.reduce((a,x) => s >= x.n ? x : a, LEVELS[0]);
+const nextLevel = s => LEVELS.find(x => x.n > s) || null;
+
+function compute(trades = state.trades, st = state.settings){
+  const sorted = [...trades].sort((a,b) => a.ts - b.ts);
+  let streak = 0, best = 0, points = 0, bal = st.cap, wins = 0, cleanN = 0;
+  const byDay = {}, rows = [];
+  for (const t of sorted){
+    const d = byDay[t.date] || (byDay[t.date] = {n:0, pnl:0});
+    const why = [];
+    if (!t.plan) why.push("sin plan antes");
+    if (!t.sl) why.push("sin SL en el broker");
+    if (!t.tp) why.push("sin TP en el broker");
+    if (!t.noMove) why.push("movió el SL o promedió");
+    if (d.n >= st.maxTrades) why.push(`pasó de ${st.maxTrades} trades en el día`);
+    if (d.pnl <= -st.maxLoss) why.push(`ya había perdido ${fmt(st.maxLoss)} ese día`);
+    const clean = !why.length;
+    if (clean){ streak++; cleanN++; points += 10; if (streak % 5 === 0) points += 25; } else streak = 0;
+    best = Math.max(best, streak);
+    const p = Number(t.pnl) || 0; if (p > 0) wins++;
+    d.n++; d.pnl += p; bal += p;
+    rows.push({...t, clean, why, streak, bal});
+  }
+  return {rows, streak, best, points, bal, byDay, wins, cleanN};
+}
+
+/* ---------- Dibujo de la cadena ---------- */
+function chainSVG(filled, total, animateLast){
+  const perRow = 9, stepX = 33, rowH = 46, padX = 24, padY = 22;
+  const n = Math.max(total, 1);
+  const rows = Math.ceil(n / perRow);
+  const W = padX * 2 + stepX * (perRow - 1), H = padY * 2 + rowH * (rows - 1);
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="gz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--brass-hi)"/><stop offset=".55" stop-color="var(--brass)"/><stop offset="1" stop-color="var(--brass-lo)"/></linearGradient></defs>`;
+  for (let i = 0; i < n; i++){
+    const r = Math.floor(i / perRow), c = i % perRow;
+    const col = r % 2 ? perRow - 1 - c : c;            // la cadena serpentea
+    const x = padX + col * stepX, y = padY + r * rowH;
+    const on = i < filled, isNew = animateLast && i === filled - 1;
+    const stroke = on ? "url(#gz)" : "var(--ghost)";
+    const dash = on ? "" : ` stroke-dasharray="4 4"`;
+    const cls = isNew ? ` class="link-new" style="transform-box:fill-box;transform-origin:center"` : "";
+    if (i % 2 === 0) s += `<ellipse${cls} cx="${x}" cy="${y}" rx="21" ry="13.5" fill="none" stroke="${stroke}" stroke-width="6.5"${dash}/>`;
+    else s += `<rect${cls} x="${x-19}" y="${y-5}" width="38" height="10" rx="5" fill="none" stroke="${stroke}" stroke-width="4.5"${dash}/>`;
+    if (c === perRow - 1 && i < n - 1){ // codo entre filas
+      s += `<line x1="${x}" y1="${y+12}" x2="${x}" y2="${y+rowH-12}" stroke="${i+1 < filled ? "var(--brass)" : "var(--ghost)"}" stroke-width="4" stroke-linecap="round"${i+1 < filled ? "" : ' stroke-dasharray="4 4"'}/>`;
+    }
+  }
+  return s + "</svg>";
+}
+
+/* ---------- Render ---------- */
+let prevStreak = null;
+function render(){
+  const st = state.settings, r = compute();
+  $("today-lbl").textContent = new Date().toLocaleDateString("es-CR",{weekday:"long", day:"numeric", month:"long"});
+  const sEl = $("streak"); sEl.textContent = r.streak; sEl.classList.toggle("zero", r.streak === 0);
+  $("streak-sub").textContent = r.streak === 0 ? (r.best ? `Tu récord es ${r.best}. Empezá otra.` : "Empezá la cadena") : (r.streak === r.best ? "¡Es tu récord!" : `Récord: ${r.best}`);
+  const lv = levelFor(r.streak), nx = nextLevel(r.streak);
+  const b = $("badge"); b.textContent = (lv.m ? lv.m + " " : "") + lv.name; b.classList.toggle("novato", lv.n === 0);
+  $("next").textContent = nx ? `${nx.n - r.streak} para ${nx.name} ${nx.m}` : "Nivel máximo";
+  const from = lv.n, to = nx ? nx.n : lv.n;
+  $("prog").style.width = (nx ? ((r.streak - from) / (to - from)) * 100 : 100) + "%";
+  const goal = nx ? nx.n : r.streak;
+  $("chain").innerHTML = chainSVG(Math.min(r.streak, 44), Math.min(Math.max(goal, r.streak), 44), prevStreak !== null && r.streak > prevStreak);
+  prevStreak = r.streak;
+  $("best").textContent = r.best; $("points").textContent = r.points;
+  const bal = $("bal"); bal.textContent = money(r.bal); bal.className = r.bal >= st.cap ? "pos" : "neg";
+  $("bal2").textContent = money(r.bal);
+
+  // Hoy
+  const d = r.byDay[dayKey()] || {n:0, pnl:0};
+  $("t-count").textContent = `${d.n} de ${st.maxTrades}`;
+  const pips = $("pips"); pips.textContent = "";
+  for (let i = 0; i < Math.max(st.maxTrades, d.n); i++){ const p = document.createElement("span"); p.className = "pip" + (i < d.n ? (i >= st.maxTrades ? " over" : " on") : ""); pips.append(p); }
+  const lost = Math.max(0, -d.pnl);
+  $("t-loss").textContent = `${fmt(lost)} de ${fmt(st.maxLoss)}`;
+  $("lossbar").style.width = Math.min(100, lost / st.maxLoss * 100) + "%";
+  const stop = $("stop"), msgs = [];
+  if (d.n >= st.maxTrades) msgs.push(`Ya hiciste tus ${st.maxTrades} trades de hoy. Uno más rompe la cadena. Apagá la compu.`);
+  else if (d.pnl <= -st.maxLoss) msgs.push(`Llegaste a la pérdida máxima de hoy. Otro trade rompe la cadena.`);
+  else if (d.pnl > 0 && d.n > 0) msgs.push(`Vas ${signed(d.pnl)} hoy. Cerrar el día en verde también es ganar.`);
+  stop.hidden = !msgs.length; stop.textContent = msgs.join(" ");
+  stop.style.background = (d.pnl > 0 && d.n < st.maxTrades) ? "var(--ok-soft)" : ""; stop.style.color = (d.pnl > 0 && d.n < st.maxTrades) ? "var(--ok)" : "";
+
+  // Cuenta
+  $("winrate").textContent = r.rows.length ? Math.round(r.wins / r.rows.length * 100) + "%" : "—";
+  $("cleanrate").textContent = r.rows.length ? Math.round(r.cleanN / r.rows.length * 100) + "%" : "—";
+  renderChart(r.rows, st.cap); renderList(r.rows);
+}
+
+function renderChart(rows, cap){
+  const W = 520, H = 180, L = 46, R = 12, T = 14, B = 24;
+  const vals = [cap, ...rows.map(x => x.bal)];
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < cap * .1){ hi += cap * .05; lo -= cap * .05; }
+  const pd = (hi - lo) * .12; lo -= pd; hi += pd;
+  const x = i => L + (vals.length < 2 ? 0 : i * (W - L - R) / (vals.length - 1));
+  const y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  const yb = y(cap);
+  let s = "";
+  [hi, (hi+lo)/2, lo].forEach(v => { s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${money(Math.round(v))}</text>`; });
+  s += `<line x1="${L}" x2="${W-R}" y1="${yb}" y2="${yb}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>`;
+  if (vals.length > 1){
+    const last = vals[vals.length-1], col = last >= cap ? "var(--ok)" : "var(--bad)";
+    const pts = vals.map((v,i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ");
+    s += `<polygon points="${L},${yb} ${pts} ${x(vals.length-1)},${yb}" fill="${col}" opacity=".14"/>`;
+    s += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s += `<circle cx="${x(vals.length-1)}" cy="${y(last)}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `<text x="${L}" y="${H-5}">inicio</text><text x="${W-R}" y="${H-5}" text-anchor="end">trade ${vals.length-1}</text>`;
+  } else s += `<text x="${(W+L)/2}" y="${yb-14}" text-anchor="middle">La línea aparece con tu primer trade</text>`;
+  $("chart").innerHTML = s;
+}
+
+function renderList(rows){
+  const box = $("list"); box.textContent = "";
+  if (!rows.length){ box.innerHTML = '<div class="empty">Todavía no hay trades.<br>Tocá <b>Anotar trade</b> después de tu próximo trade.</div>'; return; }
+  for (const t of [...rows].reverse()){
+    const row = document.createElement("div"); row.className = "tr";
+    const ic = document.createElement("span"); ic.className = "ic " + (t.clean ? "ok" : "bad"); ic.textContent = t.clean ? t.streak : "✕";
+    const mid = document.createElement("div");
+    const sym = document.createElement("div"); sym.className = "sym"; sym.textContent = (t.symbol || "—") + " · " + (t.side === "short" ? "Short" : "Long");
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = new Date(t.ts).toLocaleDateString("es-CR",{day:"numeric",month:"short"}) + " · " + new Date(t.ts).toLocaleTimeString("es-CR",{hour:"numeric",minute:"2-digit"});
+    mid.append(sym, meta);
+    const p = Number(t.pnl) || 0, pnl = document.createElement("span"); pnl.className = "pnl " + (p > 0 ? "pos" : p < 0 ? "neg" : ""); pnl.textContent = signed(p);
+    row.append(ic, mid, pnl);
+    if (!t.clean){ const w = document.createElement("div"); w.className = "why"; w.textContent = "Rompió: " + t.why.join(", "); row.append(w); }
+    if (t.note){ const n = document.createElement("div"); n.className = "note"; n.textContent = "“" + t.note + "”"; row.append(n); }
+    const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "Borrar";
+    let tm; del.onclick = () => {
+      if (!del.classList.contains("arm")){ del.classList.add("arm"); del.textContent = "¿Seguro? Tocá otra vez"; tm = setTimeout(() => { del.classList.remove("arm"); del.textContent = "Borrar"; }, 3500); return; }
+      clearTimeout(tm); state.trades = state.trades.filter(x => x.id !== t.id); save(); render(); toast("Trade borrado");
+    };
+    row.append(del); box.append(row);
+  }
+}
+
+/* ---------- Navegación ---------- */
+function show(v){
+  ["cadena","cuenta","ajustes"].forEach(k => { $("v-"+k).hidden = k !== v; });
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.v === v));
+  $("fab").hidden = v === "ajustes";
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.v)));
+
+/* ---------- Hoja de anotar ---------- */
+let form = null;
+function resetForm(){ form = {side:"long", gain:true, plan:false, sl:false, tp:false, noMove:false}; $("form").reset(); syncForm(); }
+function syncForm(){
+  $("f-long").setAttribute("aria-pressed", form.side === "long"); $("f-short").setAttribute("aria-pressed", form.side === "short");
+  $("f-gain").setAttribute("aria-pressed", form.gain); $("f-lossb").setAttribute("aria-pressed", !form.gain);
+  document.querySelectorAll(".check").forEach(c => c.setAttribute("aria-checked", !!form[c.dataset.k]));
+  const r = compute(), st = state.settings, d = r.byDay[dayKey()] || {n:0, pnl:0};
+  const missing = CHECKS.filter(k => !form[k]).length;
+  const dayBreak = d.n >= st.maxTrades ? `Ya hiciste ${d.n} trades hoy.` : d.pnl <= -st.maxLoss ? "Ya llegaste a la pérdida máxima de hoy." : "";
+  const v = $("verdict");
+  if (!missing && !dayBreak){ v.className = "verdict ok"; v.textContent = `✓ Limpio: suma el eslabón ${r.streak + 1}`; }
+  else { v.className = "verdict bad"; v.textContent = dayBreak ? `✕ ${dayBreak} Este trade rompe la cadena${r.streak ? " de " + r.streak : ""}.` : (r.streak ? `✕ Así rompe tu racha de ${r.streak}. Faltan ${missing} casilla${missing>1?"s":""}.` : `Faltan ${missing} casilla${missing>1?"s":""} para que sume.`); }
+}
+function openSheet(){
+  resetForm(); $("scrim").hidden = false; $("sheet").hidden = false;
+  requestAnimationFrame(() => { $("scrim").classList.add("show"); $("sheet").classList.add("show"); });
+  setTimeout(() => $("f-sym").focus(), 320);
+}
+function closeSheet(){
+  $("scrim").classList.remove("show"); $("sheet").classList.remove("show");
+  setTimeout(() => { $("scrim").hidden = true; $("sheet").hidden = true; }, 320);
+}
+$("fab").onclick = openSheet; $("cancel").onclick = closeSheet; $("scrim").onclick = closeSheet;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
+$("f-long").onclick = () => { form.side = "long"; syncForm(); };
+$("f-short").onclick = () => { form.side = "short"; syncForm(); };
+$("f-gain").onclick = () => { form.gain = true; syncForm(); };
+$("f-lossb").onclick = () => { form.gain = false; syncForm(); };
+document.querySelectorAll(".check").forEach(c => c.onclick = () => { form[c.dataset.k] = !form[c.dataset.k]; buzz(8); syncForm(); });
+
+$("form").addEventListener("submit", e => {
+  e.preventDefault();
+  const raw = $("f-pnl").value.trim();
+  if (raw === "" || isNaN(Number(raw))){ $("f-pnl").focus(); toast("Poné cuánto ganaste o perdiste, en dólares."); return; }
+  const amt = Math.abs(Number(raw)) * (form.gain ? 1 : -1);
+  const before = compute();
+  const now = new Date();
+  const t = {id:uid(), ts:now.getTime(), date:dayKey(now), symbol:$("f-sym").value.trim().toUpperCase(), side:form.side, pnl:Math.round(amt*100)/100, note:$("f-note").value.trim(), plan:form.plan, sl:form.sl, tp:form.tp, noMove:form.noMove};
+  state.trades.push(t);
+  if (!save()){ state.trades.pop(); return; }
+  closeSheet();
+  const after = compute();
+  setTimeout(() => { show("cadena"); render(); react(before, after); }, 200);
+});
+
+function react(before, after){
+  if (after.streak > before.streak){
+    buzz([20,40,20]);
+    const lv = LEVELS.find(x => x.n === after.streak && x.n > 0);
+    if (lv){ confetti(); pop(lv.m, `¡Subiste a ${lv.name}!`, `${after.streak} trades limpios seguidos. ${lv.n === 40 ? "Ya te ganaste meterle más plata a la cuenta." : "Seguí así, mae."}`); }
+    else if (after.streak === after.best && after.streak > 1 && before.best < after.streak) { confetti(); toast(`¡Nuevo récord: ${after.streak}!`); }
+    else toast(`Eslabón ${after.streak}. No rompás la cadena.`);
+  } else {
+    buzz([60,60,120]);
+    if (before.streak > 0) pop("⛓️‍💥", `Se rompió la cadena de ${before.streak}`, `Tu récord sigue siendo ${after.best}. La próxima, las 4 casillas. Mañana empieza otra.`);
+    else toast("Anotado. La próxima, las 4 casillas para que sume.");
+  }
+}
+
+/* ---------- Efectos ---------- */
+function buzz(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3000); }
+function pop(medal, h, p){ $("pop-medal").textContent = medal; $("pop-h").textContent = h; $("pop-p").textContent = p; $("overlay").hidden = false; $("pop-ok").focus(); }
+$("pop-ok").onclick = () => { $("overlay").hidden = true; };
+function confetti(){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("fx"), ctx = c.getContext("2d"), dpr = devicePixelRatio || 1;
+  c.hidden = false; c.width = innerWidth * dpr; c.height = innerHeight * dpr; ctx.scale(dpr, dpr);
+  const cs = getComputedStyle(document.documentElement);
+  const cols = [cs.getPropertyValue("--brass-hi"), cs.getPropertyValue("--brass"), cs.getPropertyValue("--ok"), "#ffffff"];
+  const ps = Array.from({length:110}, () => ({x:innerWidth/2, y:innerHeight*.35, vx:(Math.random()-.5)*11, vy:-Math.random()*12-4, r:Math.random()*5+3, c:cols[Math.floor(Math.random()*cols.length)], a:Math.random()*6, s:(Math.random()-.5)*.3}));
+  let f = 0;
+  (function tick(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    for (const p of ps){ p.vy += .35; p.x += p.vx; p.y += p.vy; p.a += p.s; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r); ctx.restore(); }
+    if (++f < 110) requestAnimationFrame(tick); else { c.hidden = true; ctx.setTransform(1,0,0,1,0,0); }
+  })();
+}
+
+/* ---------- Ajustes ---------- */
+const SET = {cap:"s-cap", risk:"s-risk", maxTrades:"s-max", maxLoss:"s-loss"};
+for (const [k,id] of Object.entries(SET)){
+  $(id).value = state.settings[k];
+  $(id).addEventListener("change", () => {
+    const v = Number($(id).value);
+    if (!(v > 0)){ $(id).value = state.settings[k]; toast("Tiene que ser un número mayor que cero."); return; }
+    state.settings[k] = k === "maxTrades" ? Math.round(v) : v; save(); render(); toast("Guardado");
+  });
+}
+function backupJSON(){ return JSON.stringify({app:"la-cadena", version:1, exported:new Date().toISOString(), settings:state.settings, trades:[...state.trades].sort((a,b)=>a.ts-b.ts)}, null, 2); }
+function backupFile(){ return new File([backupJSON()], `la-cadena-${dayKey()}.json`, {type:"application/json"}); }
+$("export").onclick = () => {
+  const f = backupFile(), a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast("Respaldo descargado");
+};
+$("share").onclick = async () => {
+  const f = backupFile();
+  try{
+    if (navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:"La Cadena", text:"Mis trades de La Cadena"}); return; }
+  }catch(e){ if (e && e.name === "AbortError") return; }
+  try{ await navigator.clipboard.writeText(backupJSON()); toast("Copiado. Pegáselo a Claude en el chat."); }
+  catch(e){ $("export").click(); }
+};
+$("import").onclick = () => $("file").click();
+$("file").onchange = async () => {
+  const f = $("file").files[0]; if (!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if (!d || !Array.isArray(d.trades)) throw 0;
+    const ids = new Set(state.trades.map(t => t.id)); let added = 0;
+    for (const t of d.trades) if (t && t.ts && !ids.has(t.id)){ state.trades.push({...t, id:t.id || uid()}); added++; }
+    if (d.settings) state.settings = {...DEFAULTS, ...state.settings, ...d.settings};
+    save(); for (const [k,id] of Object.entries(SET)) $(id).value = state.settings[k]; render();
+    toast(added ? `Se cargaron ${added} trades` : "Ese respaldo no tenía trades nuevos");
+  }catch(e){ toast("Ese archivo no es un respaldo de La Cadena."); }
+  $("file").value = "";
+};
+let wipeT;
+$("wipe").onclick = () => {
+  const b = $("wipe");
+  if (!b.classList.contains("arm")){ b.classList.add("arm"); b.lastChild.textContent = "¿Seguro? Se borra todo. Tocá otra vez"; wipeT = setTimeout(() => { b.classList.remove("arm"); b.lastChild.textContent = "Borrar todo"; }, 4000); return; }
+  clearTimeout(wipeT); state = {trades:[], settings:{...DEFAULTS}}; save(); for (const [k,id] of Object.entries(SET)) $(id).value = state.settings[k];
+  b.classList.remove("arm"); b.lastChild.textContent = "Borrar todo"; prevStreak = null; render(); toast("Todo borrado");
+};
+
+/* ---------- Instalar + sin internet ---------- */
+let installEvt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("install-card").hidden = false; });
+$("install").onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(()=>{}); installEvt = null; $("install-card").hidden = true; };
+addEventListener("appinstalled", () => { $("install-card").hidden = true; toast("¡Instalada! Buscala en tu pantalla de inicio."); });
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+resetForm(); render();
+</script>
+</body>
+</html>
